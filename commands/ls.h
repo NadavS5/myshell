@@ -5,5 +5,6 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <stdio.h>
+#include <sys/stat.h>
 
 int ls(std::vector<std::string> params);

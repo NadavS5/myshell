@@ -33,32 +33,34 @@ int main() {
 }
 void execute_command(std::string input) {
 	std::vector<std::string> params;
-		std::string::size_type position = input.rfind("cd ");
-		if(position != std::string::npos) {
-			std::string dest = input.substr(position + 3);
 
-			params.emplace_back(input.substr(position + 3));
-			if(cd(params) == -1) {
-				fprintf(stderr,"chdir failed: %s\n", strerror(errno));
-			}
+	if(input.find(' ') != std::string::npos) {
+		params = split(input, ' ');
+		params.erase(params.begin());
+	}
+	
+
+	std::string::size_type position = input.rfind("cd", 0);
+	if(position != std::string::npos) {
+		std::string dest = input.substr(position + 3);
+
+		if(cd(params) == -1) {
+			fprintf(stderr,"chdir failed: %s\n", strerror(errno));
 		}
-		position = input.rfind("pwd");
-		if(position != std::string::npos) {
-			if(pwd() == -1) {
-				fprintf(stderr,"pwd failed: %s\n", strerror(errno));
-			}
+	}
+	
+	position = input.rfind("pwd", 0);
+	if(position != std::string::npos) {
+		if(pwd() == -1) {
+			fprintf(stderr,"pwd failed: %s\n", strerror(errno));
 		}
-		position = input.rfind("ls");
-		if(position != std::string::npos) {
-			
-			if (input.length() > 2) {
-				params.emplace_back(input.substr(position + 3));
-			}
-			
-			
-			if(ls(params) == -1) {
-				fprintf(stderr,"ls failed: %s\n", strerror(errno));
-			}
+	}
+
+	position = input.rfind("ls", 0);
+	if(position != std::string::npos) {
+		if(ls(params) == -1) {
+			fprintf(stderr,"ls failed: %s\n", strerror(errno));
+		}
 	}
 
 }
