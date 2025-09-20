@@ -11,7 +11,7 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
     return result;
 }
 
-std::vector<std::string> split2(const std::string& s, std::string& delimiter) {
+std::vector<std::string> split2(const std::string& s, const std::string& delimiter) {
     size_t pos_start = 0, pos_end, delim_len = delimiter.length();
     std::string token;
     std::vector<std::string> res;
@@ -24,4 +24,10 @@ std::vector<std::string> split2(const std::string& s, std::string& delimiter) {
 
     res.push_back (s.substr (pos_start));
     return res;
+}
+bool startswith(const std::string& str, const std::string& prefix) {
+    return str.rfind(prefix, 0) == 0;
+}
+bool startswith(const std::string& str, char prefix) {
+    return str.rfind(prefix, 0) == 0;
 }

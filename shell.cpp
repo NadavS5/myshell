@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <cstring>
 #include <fcntl.h>
+
 std::vector<std::string> commands;
 char current_dir[1024];
 void handle_input(std::string);
@@ -106,6 +107,7 @@ void handle_input(std::string input) {
 		close(saved_stdout);
 		
 	}
+
 	else if(input.find(">") != std::string::npos) {
 		std::cout << "redirect append used" << std::endl;
 		auto parts = split(input, '>' );
