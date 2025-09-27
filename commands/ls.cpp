@@ -5,25 +5,36 @@ int ls(std::vector<std::string> params) {
     struct dirent *dir;
 
 
-    std::string dir_name = ".";
-    
+    // std::string dir_name = ".";
+    std::vector<std::string> options;
+    std::vector<std::string> dirs;
 
-    for(auto p : params) {
+    for(int i =0; i < params.size(); i++) {
+        auto p = params.at(i);
         if(startswith(p, '-')) {
-            std::cout << "option " << p << std::endl;
-        } else {
-            dir_name = p;
+           options.push_back(params.at(i));
+        }
+        else {
+            if (!isAllWhitespace(params.at(i))) dirs.push_back(params.at(i)); 
+            
         }
     }
 
-    
-    d = opendir(dir_name.c_str());
-    if (d) {
-        while ((dir = readdir(d)) != NULL) {
-            std::cout << dir->d_name << std::endl;
-        }
-        closedir(d);
+    if (dirs.size() == 0) {
+        dirs.push_back(".");
     }
+
+    for (auto dirname : dirs) {
+        std::cout <<"listing: "<< dirname << std::endl;
+        d = opendir(dirname.c_str());
+        if (d) {
+            while ((dir = readdir(d)) != NULL) {
+                std::cout << dir->d_name << std::endl;
+            }
+            closedir(d);
+        }
+    }
+    
     
 
     
