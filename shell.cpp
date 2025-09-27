@@ -11,6 +11,8 @@
 #include <errno.h>
 #include <cstring>
 #include <fcntl.h>
+#include <sys/wait.h>
+#include <algorithm> // Required for std::find
 
 std::vector<std::string> commands;
 char current_dir[1024];
@@ -67,24 +69,42 @@ void execute_command(std::string input) {
 }
 
 void handle_input(std::string input) {
+	auto parts = split(input, '|' );
 
 	if(input.find("|") != std::string::npos) {
-		std::cout << "pipe used" << std::endl;
-		auto parts = split(input, '|' );
-		int last_fd = STDOUT_FILENO;
-		for (auto part : parts) {
-
-			int fd[2];
-			if (pipe(fd) == -1) {
-				perror("pipe failed");
-				exit(1);
-    		}
+		// std::cout << "pipe used" << std::endl;
+		
+		
+		int fd[2];
+		if (pipe(fd) == -1) {
+			perror("pipe failed");
+        	exit(1);	
+		}
+		
+		pid_t pid1 = fork();
+		//Child 1 execute:
+		if(pid1 == 0) {
+			
 			close(fd[0]);
-			dup2(fd[1], last_fd);
+			dup2(fd[1], STDOUT_FILENO);
+			close(fd[1]);
+			// perror("pipe failed");
+			exit(0);
+		}
+		pid_t pid2 = fork();
+		if(pid2 == 0) {
+			close(fd[1]);
+			dup2(fd[0], STDIN_FILENO);
+			close(fd[0]);
+			// perror("pipe failed");
+			exit(0);
+		}
+		
 
-			pid_t pid = fork();
-			execute_command(part);
-		} 
+		waitpid(pid1, NULL, 0);
+    	waitpid(pid2, NULL, 0);
+			
+		
 	}
 
 	else if(input.find(">>") != std::string::npos) {
@@ -128,5 +148,12 @@ void handle_input(std::string input) {
 		close(saved_stdout);
 	}
 
-	else execute_command(input);
+	auto it_found = std::find(commands.begin(), commands.end(), parts.at(0));
+	if (it_found != commands.end()) {
+		execute_command(input);
+	}
+	else {
+		// std::cout << "system used" << std::endl;
+		system(input.c_str());
+	};
 }

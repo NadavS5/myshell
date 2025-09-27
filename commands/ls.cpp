@@ -20,7 +20,7 @@ int ls(std::vector<std::string> params) {
     d = opendir(dir_name.c_str());
     if (d) {
         while ((dir = readdir(d)) != NULL) {
-            std::cout << ("%s\n", dir->d_name) << std::endl;
+            std::cout << dir->d_name << std::endl;
         }
         closedir(d);
     }
