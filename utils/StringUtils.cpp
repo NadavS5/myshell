@@ -31,3 +31,18 @@ bool startswith(const std::string& str, const std::string& prefix) {
 bool startswith(const std::string& str, char prefix) {
     return str.rfind(prefix, 0) == 0;
 }
+
+// string erase from beggining to {return the first char that is not space}
+// string erase from beggining to the first non space char
+void ltrim(std::string& s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+        [](unsigned char ch) {
+            return !std::isspace(ch);
+        }));
+}
+
+bool isAllWhitespace(const std::string& str) {
+    return std::all_of(str.begin(), str.end(), [](unsigned char ch) {
+        return std::isspace(ch);
+    });
+}

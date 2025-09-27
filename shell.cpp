@@ -7,6 +7,7 @@
 #include "commands/cd.h"
 #include "commands/pwd.h"
 #include "commands/ls.h"
+#include "commands/read.h"
 #include "utils/StringUtils.h"
 #include <errno.h>
 #include <cstring>
@@ -23,6 +24,7 @@ int main() {
 	commands.push_back("pwd");
 	commands.push_back("cd");
 	commands.push_back("ls");
+	commands.push_back("read");
 
 	//std::cin >> input;
 	while (!std::cin.eof()){
@@ -35,71 +37,98 @@ int main() {
 	}
 }
 void execute_command(std::string input) {
-	std::vector<std::string> params;
+	ltrim(input);
+	std::vector<std::string> params = split(input, ' ');
+	std::cout << "executing2 " << input << std::endl;
+	// std::cout << params.at(0) << std::endl; 
+	// std::cout << params.at(0).size() << std::endl; 
+	// std::cout << input << std::endl;
+	// std::cout << input.size() << std::endl;
 
-	if(input.find(' ') != std::string::npos) {
-		params = split(input, ' ');
-		params.erase(params.begin());
-	}
-	
-
-	std::string::size_type position = input.rfind("cd", 0);
-	if(position != std::string::npos) {
-		std::string dest = input.substr(position + 3);
-
-		if(cd(params) == -1) {
-			fprintf(stderr,"chdir failed: %s\n", strerror(errno));
+	if (auto it_found = std::find(commands.begin(), commands.end(), params.at(0)); it_found != commands.end()) { 
+		if(input.find(' ') != std::string::npos) {
+			
+			params.erase(params.begin());
 		}
-	}
-	
-	position = input.rfind("pwd", 0);
-	if(position != std::string::npos) {
-		if(pwd() == -1) {
-			fprintf(stderr,"pwd failed: %s\n", strerror(errno));
-		}
-	}
+		
 
-	position = input.rfind("ls", 0);
-	if(position != std::string::npos) {
-		if(ls(params) == -1) {
-			fprintf(stderr,"ls failed: %s\n", strerror(errno));
-		}
-	}
+		std::string::size_type position = input.rfind("cd", 0);
+		if(position != std::string::npos) {
+			std::string dest = input.substr(position + 3);
 
+			if(cd(params) == -1) {
+				fprintf(stderr,"chdir failed: %s\n", strerror(errno));
+			}
+		}
+		
+		position = input.rfind("pwd", 0);
+		if(position != std::string::npos) {
+			if(pwd() == -1) {
+				fprintf(stderr,"pwd failed: %s\n", strerror(errno));
+			}
+		}
+
+		position = input.rfind("ls", 0);
+		if(position != std::string::npos) {
+			if(ls(params) == -1) {
+				fprintf(stderr,"ls failed: %s\n", strerror(errno));
+			}
+		}
+		position = input.rfind("read", 0);
+		if(position != std::string::npos) {
+			if(read_cmd(params) == -1) {
+				fprintf(stderr,"read failed: %s\n", strerror(errno));
+			}
+		}
+	}		
+	else {
+		std::cout << "system used" << std::endl;
+		system(input.c_str());
+	}
 }
 
 void handle_input(std::string input) {
+	input += " ";
 	auto parts = split(input, '|' );
 
-	if(input.find("|") != std::string::npos) {
-		// std::cout << "pipe used" << std::endl;
+	if(auto delim = input.find("|"); delim != std::string::npos) {
+		std::cout << "pipe used" << std::endl;
 		
 		
 		int fd[2];
 		if (pipe(fd) == -1) {
 			perror("pipe failed");
-        	exit(1);	
+        	exit(1);
 		}
 		
 		pid_t pid1 = fork();
 		//Child 1 execute:
 		if(pid1 == 0) {
-			
+			std::string cmd = input.substr(0,delim);
+			// std::cout << "executing " << cmd << std::endl;
 			close(fd[0]);
 			dup2(fd[1], STDOUT_FILENO);
 			close(fd[1]);
-			// perror("pipe failed");
+			
+			handle_input(cmd);
+			// perror(cmd.c_str());
 			exit(0);
 		}
 		pid_t pid2 = fork();
 		if(pid2 == 0) {
+			std::string cmd = input.substr(delim + 1);
+			// std::cout << "executing " << cmd << std::endl;
+
 			close(fd[1]);
 			dup2(fd[0], STDIN_FILENO);
 			close(fd[0]);
-			// perror("pipe failed");
+			handle_input(cmd);
+			// perror(cmd.c_str());
 			exit(0);
 		}
 		
+		close(fd[1]);
+		close(fd[0]);
 
 		waitpid(pid1, NULL, 0);
     	waitpid(pid2, NULL, 0);
@@ -115,7 +144,7 @@ void handle_input(std::string input) {
 			std::cerr << "redirect can be used once!" << std::endl;
 			std::cout << parts.size() << std::endl;
 		}
-		std::cout << "forking" << std::endl;
+		// std::cout << "forking" << std::endl;
 		int fd = open(parts.at(1).c_str(), O_WRONLY | O_CREAT | O_APPEND , 0644);
 		
 		int saved_stdout = dup(STDOUT_FILENO);
@@ -135,7 +164,7 @@ void handle_input(std::string input) {
 			std::cerr << "redirect can be used once!" << std::endl;\
 			std::cout << parts.size() << std::endl;
 		}
-		std::cout << "forking" << std::endl;
+		// std::cout << "forking" << std::endl;
 
 		int fd = open(parts.at(1).c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
@@ -147,13 +176,11 @@ void handle_input(std::string input) {
 		dup2(saved_stdout, STDOUT_FILENO);
 		close(saved_stdout);
 	}
-
-	auto it_found = std::find(commands.begin(), commands.end(), parts.at(0));
-	if (it_found != commands.end()) {
+	
+		
+	else {
 		execute_command(input);
 	}
-	else {
-		// std::cout << "system used" << std::endl;
-		system(input.c_str());
-	};
+	
+	
 }
